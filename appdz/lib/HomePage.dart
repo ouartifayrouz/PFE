@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dztrainfay/SignInScreen.dart';
 import 'package:dztrainfay/compte/compte_screen.dart';
 import 'package:dztrainfay/home_screen.dart';
-import 'package:dztrainfay/location_screen.dart';
 import 'package:dztrainfay/chat_screen.dart'; // 🔥 Import du Chat
 
 class HomePage extends StatefulWidget {
@@ -38,7 +37,7 @@ class _HomePageState extends State<HomePage> {
         },
       ),
 
-      LocationScreen(),
+
       ChatScreen(), // 🔥 Ajout du Chat
 
     ];
@@ -64,7 +63,6 @@ class _HomePageState extends State<HomePage> {
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Compte"),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: "Localisation"),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"),
         ],
       ),

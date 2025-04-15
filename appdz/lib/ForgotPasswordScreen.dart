@@ -41,22 +41,36 @@ class ForgotPasswordScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () async {
                     String email = emailController.text.trim();
-                    // Vérifiez si l'email existe dans Firestore
+
                     QuerySnapshot snapshot = await FirebaseFirestore.instance
                         .collection('users')
                         .where('email', isEqualTo: email)
                         .get();
 
                     if (snapshot.docs.isNotEmpty) {
-                      // Logique pour envoyer l'e-mail avec le code
-                      int verificationCode = generateVerificationCode();
-                      await sendVerificationEmail(email, verificationCode);
+                      DocumentSnapshot userDoc = snapshot.docs.first;
+                      DocumentReference userRef = userDoc.reference;
 
-                      // Naviguer vers la page de vérification avec le code
+                      // Récupérer le dernier code (ou le compteur actuel)
+                      int currentCounter = userDoc.get('resetCounter') ?? 0;
+
+                      // Incrémenter le compteur
+                      int newVerificationCode = currentCounter + 1;
+
+                      // Mettre à jour Firestore avec le nouveau code
+                      await userRef.update({'resetCounter': newVerificationCode});
+
+                      // Envoyer le code par mail
+                      await sendVerificationEmail(email, newVerificationCode);
+
+                      // Aller à la page de vérification
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => VerifyEmailScreen(verificationCode: verificationCode, email: email),
+                          builder: (context) => VerifyEmailScreen(
+                            verificationCode: newVerificationCode,
+                            email: email,
+                          ),
                         ),
                       );
                     } else {

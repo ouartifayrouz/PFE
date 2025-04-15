@@ -29,8 +29,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Set<Polyline> _polylines = {};
   Map<String, List<String>> _stationLines = {};
   bool _showIntermediateStations = false;
-
+  TextEditingController _destinationSearchController = TextEditingController();
+  List<String> _filteredDestinationStations = [];
   get smallRedMarker => null;
+  TextEditingController _departureSearchController = TextEditingController();
+  List<String> _filteredDepartureStations = [];
 
   void _zoomOnStation(LatLng position) {
     _mapController?.animateCamera(CameraUpdate.newLatLngZoom(position, 14));
@@ -54,6 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _getCurrentLocation();
     _fetchStationsFromFirestore();
     testFetchBoufarik();
+    _filteredDestinationStations = _stations.keys.toList();
+    _filteredDepartureStations = _stations.keys.toList();
+
   }
 
   Future<void> _getCurrentLocation() async {
@@ -449,8 +455,6 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        TextEditingController searchController = TextEditingController();
-        List<String> filteredStations = _stations.keys.toList();
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -494,7 +498,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () {
                             setModalState(() {
                               _showGareList = true;
-                              filteredStations = _stations.keys.toList(); // reset filter
+                              _filteredDepartureStations = _stations.keys.toList();
+// reset filter
                             });
                           },
                         ),
@@ -502,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text("🚉 Choisir une gare", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         SizedBox(height: 10),
                         TextField(
-                          controller: searchController,
+                          controller: _departureSearchController,
                           decoration: InputDecoration(
                             hintText: "Rechercher une gare...",
                             prefixIcon: Icon(Icons.search),
@@ -510,19 +515,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           onChanged: (query) {
                             setModalState(() {
-                              filteredStations = _stations.keys
+                              _filteredDepartureStations = _stations.keys
                                   .where((name) => name.toLowerCase().contains(query.toLowerCase()))
                                   .toList();
                             });
                           },
+
                         ),
                         SizedBox(height: 10),
                         Expanded(
                           child: ListView.builder(
                             controller: scrollController,
-                            itemCount: filteredStations.length,
+                            itemCount: _filteredDepartureStations.length,
                             itemBuilder: (context, index) {
-                              String name = filteredStations[index];
+                              String name = _filteredDepartureStations[index];
+
                               return ListTile(
                                 leading: Icon(Icons.location_on),
                                 title: Text(name),
@@ -568,17 +575,23 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-    );
+    ).whenComplete(() {
+      if (_selectedDeparture == null || _useCurrentLocationAsDeparture) {
+        _departureSearchController.clear();
+        _filteredDepartureStations = _stations.keys.toList();
+      }
+    });
+
   }
 
   void _showDestinationBottomSheet() {
+    // Afficher toutes les gares au départ
+    _filteredDestinationStations = _stations.keys.toList();
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) {
-        TextEditingController searchController = TextEditingController();
-        List<String> filteredStations = _stations.keys.toList();
-
         return StatefulBuilder(
           builder: (context, setModalState) {
             return DraggableScrollableSheet(
@@ -596,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       SizedBox(height: 10),
                       TextField(
-                        controller: searchController,
+                        controller: _destinationSearchController,
                         decoration: InputDecoration(
                           hintText: "Rechercher une gare...",
                           prefixIcon: Icon(Icons.search),
@@ -604,7 +617,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         onChanged: (query) {
                           setModalState(() {
-                            filteredStations = _stations.keys
+                            _filteredDestinationStations = _stations.keys
                                 .where((name) => name.toLowerCase().contains(query.toLowerCase()))
                                 .toList();
                           });
@@ -614,9 +627,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Expanded(
                         child: ListView.builder(
                           controller: scrollController,
-                          itemCount: filteredStations.length,
+                          itemCount: _filteredDestinationStations.length,
                           itemBuilder: (context, index) {
-                            String gare = filteredStations[index];
+                            String gare = _filteredDestinationStations[index];
                             return ListTile(
                               leading: Icon(Icons.location_on_outlined),
                               title: Text(gare),
@@ -646,8 +659,16 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
-    );
+
+      // ✅ Nettoyage si aucune gare n’a été sélectionnée
+    ).whenComplete(() {
+      if (_selectedDestination == null) {
+        _destinationSearchController.clear();
+        _filteredDestinationStations = _stations.keys.toList();
+      }
+    });
   }
+
 
   void drawRouteWithIntermediateStations() async {
     if (_selectedDeparture == null || _selectedDestination == null) return;
