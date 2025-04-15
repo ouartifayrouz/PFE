@@ -14,6 +14,9 @@ import 'dart:convert';
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'AdminHomePage.dart';
 
 class SignInScreen extends StatefulWidget {
   @override
@@ -126,18 +129,45 @@ class _SignInScreenState extends State<SignInScreen> {
                       final password = passwordController.text.trim();
 
                       try {
-                        QuerySnapshot snapshot = await FirebaseFirestore.instance
+                        // 🔹 Vérifier si l'utilisateur est un admin
+                        QuerySnapshot adminSnapshot = await FirebaseFirestore.instance
+                            .collection('Admin')
+                            .where('Username', isEqualTo: username)
+                            .where('Password', isEqualTo: password)
+                            .get();
+
+                        if (adminSnapshot.docs.isNotEmpty) {
+                          // ✅ Connexion admin réussie
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => AdminHomePage(adminUsername: username)),
+                          );
+                          return; // on quitte ici si c'est un admin
+                        }
+
+                        // 🔹 Sinon, on vérifie dans la collection des utilisateurs normaux
+                        QuerySnapshot userSnapshot = await FirebaseFirestore.instance
                             .collection('User')
                             .where('username', isEqualTo: username)
                             .where('password', isEqualTo: password)
                             .get();
 
-                        if (snapshot.docs.isNotEmpty) {
+                        if (userSnapshot.docs.isNotEmpty) {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('isLoggedIn', true);
+                          await prefs.setString('username', username);
+
+                          final sharedPrefs = await SharedPreferences.getInstance();
+                          await sharedPrefs.setBool('isLoggedIn', true);
+                          await sharedPrefs.setString('username', username);
+
+
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (context) => HomePage(username: username)),
                           );
-                        } else {
+                        }
+                        else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Nom d'utilisateur ou mot de passe incorrect")),
                           );
@@ -157,6 +187,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ),
+
                   SizedBox(height: 10.0),
 
 

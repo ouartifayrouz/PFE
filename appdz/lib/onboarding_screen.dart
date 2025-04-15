@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
-import 'SignUpScreen.dart';
+import 'SignInScreen.dart';
+
 
 class OnboardingScreen extends StatefulWidget {
   @override
@@ -41,7 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 await prefs.setBool('onboarding_seen', true);
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => RegisterPage()), // Rediriger vers SignInScreen
+                  MaterialPageRoute(builder: (_) => SignInScreen()), // Rediriger vers SignInScreen
                 );
               },
               child: Text("Commencer"),

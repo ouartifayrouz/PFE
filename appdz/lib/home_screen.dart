@@ -808,160 +808,160 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
-          children: [
+        children: [
           GoogleMap(
-          onMapCreated: (GoogleMapController controller) {
-    setState(() {
-    _mapController = controller;
-    });
-    },
-      initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 10),
-      markers: _markers,
-      myLocationEnabled: true,
-      myLocationButtonEnabled: true,
-      polylines: _polylines,
-    ),
+            onMapCreated: (GoogleMapController controller) {
+              setState(() {
+                _mapController = controller;
+              });
+            },
+            initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 10),
+            markers: _markers,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: true,
+            polylines: _polylines,
+          ),
 
 
 
-    Positioned(
-    bottom: 0,
-    left: 0,
-    right: 0,
-    child: Container(
-    padding: EdgeInsets.all(16),
-    decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.only(
-    topLeft: Radius.circular(25),
-    topRight: Radius.circular(25),
-    ),
-    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
-    ),
-    child: Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-    Text(
-    "Où souhaitez-vous aller aujourd'hui?",
-    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-    ),
-    SizedBox(height: 10),
-    InkWell(
-    onTap: _showDepartureChoiceModal,
-    child: Container(
-    padding: EdgeInsets.all(12),
-    decoration: BoxDecoration(
-    border: Border.all(color: Colors.grey),
-    borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-    children: [
-    Icon(Icons.home, color: Colors.blueGrey),
-    SizedBox(width: 10),
-    Expanded(
-    child: Text(
-    _useCurrentLocationAsDeparture
-    ? "📍 Ma position actuelle"
-        : (_selectedDeparture ?? "🏠 Choisir un point de départ"),
-    style: TextStyle(fontSize: 16),
-    ),
-    ),
-    Icon(Icons.arrow_drop_down),
-    ],
-    ),
-    ),
-    ),
-    InkWell(
-    onTap: _showDestinationBottomSheet,
-    child: Container(
-    padding: EdgeInsets.all(12),
-    decoration: BoxDecoration(
-    border: Border.all(color: Colors.grey),
-    borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-    children: [
-    Icon(Icons.train, color: Colors.blueGrey),
-    SizedBox(width: 10),
-    Expanded(
-    child: Text(
-    _selectedDestination ?? "🚉 Choisir une gare de destination",
-    style: TextStyle(fontSize: 16),
-    ),
-    ),
-    Icon(Icons.arrow_drop_down),
-    ],
-    ),
-    ),
-    ),
-    SizedBox(height: 16),
-    GestureDetector(
-    onTap: () => _selectDateTime(context),
-    child: Row(
-    children: [
-    Icon(Icons.calendar_today, color: Colors.blueGrey),
-    SizedBox(width: 10),
-    Text(
-    _selectedDate != null
-    ? DateFormat('dd/MM/yyyy HH:mm').format(_selectedDate!)
-        : "📅 Choisir une date et heure",
-    style: TextStyle(fontSize: 16),
-    ),
-    ],
-    ),
-    ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(25),
+                  topRight: Radius.circular(25),
+                ),
+                boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "Où souhaitez-vous aller aujourd'hui?",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 10),
+                  InkWell(
+                    onTap: _showDepartureChoiceModal,
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.home, color: Colors.blueGrey),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _useCurrentLocationAsDeparture
+                                  ? "📍 Ma position actuelle"
+                                  : (_selectedDeparture ?? "🏠 Choisir un point de départ"),
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: _showDestinationBottomSheet,
+                    child: Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.train, color: Colors.blueGrey),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _selectedDestination ?? "🚉 Choisir une gare de destination",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Icon(Icons.arrow_drop_down),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () => _selectDateTime(context),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today, color: Colors.blueGrey),
+                        SizedBox(width: 10),
+                        Text(
+                          _selectedDate != null
+                              ? DateFormat('dd/MM/yyyy HH:mm').format(_selectedDate!)
+                              : "📅 Choisir une date et heure",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
 
-    SizedBox(height: 10),
-    ElevatedButton(
-    onPressed: () {
-    setState(() {
-    _searchMessage = "Consulter les trajets de votre voyage"; // Met à jour le message après la recherche
-    });
-    _updateMarkers(); // Met à jour les marqueurs après sélection
-    drawRouteWithIntermediateStations(); // 👈 ajouter ceci
-    zoomToSelectedLocations();
-    },
-    style: ElevatedButton.styleFrom(
-    backgroundColor: Color(0xFF353C67),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    padding: EdgeInsets.symmetric(vertical: 12),
-    ),
-    child: Center(
-    child: Text("Rechercher", style: TextStyle(fontSize: 18, color: Colors.white)),
-    ),
-    ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _searchMessage = "Consulter les trajets de votre voyage"; // Met à jour le message après la recherche
+                      });
+                      _updateMarkers(); // Met à jour les marqueurs après sélection
+                      drawRouteWithIntermediateStations(); // 👈 ajouter ceci
+                      zoomToSelectedLocations();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF353C67),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: Center(
+                      child: Text("Rechercher", style: TextStyle(fontSize: 18, color: Colors.white)),
+                    ),
+                  ),
 
-    if (_searchMessage != null)
-    Padding(
-    padding: const EdgeInsets.only(top: 8.0),
-    child: ElevatedButton.icon(
-    onPressed: () {
-    if (_selectedDeparture != null && _selectedDestination != null && _selectedDate != null) {
-    _rechercherTrajets(context, _selectedDeparture!, _selectedDestination!, _selectedDate!);
-    } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text("Veuillez choisir un départ, une destination et une date"))
-    );
-    }
-    },
-    icon: Icon(Icons.directions_transit,  color: Colors.white),
-    label: Text("Consulter les trajets",style: TextStyle(fontSize: 18, color: Colors.white)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Color(0xFF353C67),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        padding: EdgeInsets.symmetric(vertical: 12,horizontal: 80),
-    ),
-    ),
-    ),
+                  if (_searchMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (_selectedDeparture != null && _selectedDestination != null && _selectedDate != null) {
+                            _rechercherTrajets(context, _selectedDeparture!, _selectedDestination!, _selectedDate!);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Veuillez choisir un départ, une destination et une date"))
+                            );
+                          }
+                        },
+                        icon: Icon(Icons.directions_transit,  color: Colors.white),
+                        label: Text("Consulter les trajets",style: TextStyle(fontSize: 18, color: Colors.white)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF353C67),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: EdgeInsets.symmetric(vertical: 12,horizontal: 80),
+                        ),
+                      ),
+                    ),
 
 
-    ],
-    ),
-    ),
-    ),
+                ],
+              ),
+            ),
+          ),
 
-    ],
-    ),
+        ],
+      ),
     );
   }
 
