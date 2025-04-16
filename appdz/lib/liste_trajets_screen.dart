@@ -77,8 +77,14 @@ class ListeTrajetsScreen extends StatelessWidget {
           );
         }
 
-        final indexDepart = garesIntermediaires.indexWhere((g) => g.gare == departure);
-        final indexArrivee = garesIntermediaires.indexWhere((g) => g.gare == destination);
+        final indexDepart = garesIntermediaires.indexWhere(
+              (g) => g.gare.toLowerCase().trim() == departure.toLowerCase().trim(),
+        );
+        final indexArrivee = garesIntermediaires.indexWhere(
+              (g) => g.gare.toLowerCase().trim() == destination.toLowerCase().trim(),
+        );
+
+        print("🛤️ Trajet ${doc.id} → Départ index: $indexDepart, Arrivée index: $indexArrivee");
 
         if (indexDepart != -1 && indexArrivee != -1 && indexDepart < indexArrivee) {
           final gareDepart = garesIntermediaires[indexDepart];
@@ -90,22 +96,28 @@ class ListeTrajetsScreen extends StatelessWidget {
               gareArrivee: gareArrivee.gare,
               heureDepart: gareDepart.heurePassage,
               heureArrivee: gareArrivee.heurePassage,
-              id: data["ID"],
-              lineId: data["lineId"],
-              trainId: data["trainId"],
+              id: data["ID"] ?? 0,
+              lineId: data["lineId"] ?? "Inconnue",
+              trainId: data["trainId"] ?? "Inconnu",
               garesIntermediaires: garesIntermediaires,
               idDepart: gareDepart.id,
               idArrivee: gareArrivee.id,
             ),
           );
+
+          print("✅ Trajet ajouté: ${gareDepart.gare} → ${gareArrivee.gare}");
+        } else {
+          print("⛔ Trajet ignoré : conditions non remplies pour ${doc.id}");
         }
       }
+
     } catch (e) {
-      print("Erreur lors de la recherche des trajets : $e");
+      print("❌ Erreur lors de la recherche des trajets : $e");
     }
 
     return trajets;
   }
+
 
   String _calculerDuree(String heureDebut, String heureFin) {
     final format = DateFormat("HH:mm");
@@ -121,6 +133,102 @@ class ListeTrajetsScreen extends StatelessWidget {
     return '${heures}h ${minutes}min';
   }
 
+
+  void _showOverlayDetails(BuildContext context, Trajet trajet) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 300,
+        left: 10,
+        right: 10,
+        child: Material(
+          elevation: 8,
+          borderRadius: BorderRadius.circular(15),
+          color: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Titre principal
+                Text(
+                  "🛤️ Détail du trajet",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF353C67),
+                  ),
+                ),
+                SizedBox(height: 10),
+
+                // Affichage graphique du trajet
+                _buildTrajetGraphique(
+                  trajet.garesIntermediaires
+                      .where((g) =>
+                  g.id >= (trajet.idDepart ?? 0) &&
+                      g.id <= (trajet.idArrivee ?? 0))
+                      .toList(),
+                  trajet.garesIntermediaires.sublist(1, trajet.garesIntermediaires.length - 1),
+                  context,
+                ),
+
+                // Infos supplémentaires
+                SizedBox(height: 20),
+                _buildInfoText("Jour de Circulation:", "Tous les jours sauf vendredis"),
+                SizedBox(height: 10),
+                _buildInfoText("PRIX:", "70 DA"),
+                SizedBox(height: 10),
+
+                SizedBox(height: 10),
+
+                // Boutons d'action
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildFavoriserButton(context),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.pink[200],
+                      ),
+                      onPressed: () {
+                        overlayEntry.remove();
+                        // Action personnalisée ici
+                      },
+
+                      child: Text(
+                        "Choisir ce trajet",
+                        style: TextStyle(color: Colors.black87),
+
+                      ),
+
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.lightBlue[100],
+                        foregroundColor: Colors.black,
+                      ),
+                      onPressed: () => overlayEntry.remove(),
+                      child: Text("Fermer"),
+                    ),
+
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+  }
+
+
+
+
+
   void _afficherDetails(BuildContext context, Trajet trajet) {
     final etapes = trajet.garesIntermediaires
         .where((g) => g.id >= (trajet.idDepart ?? 0) && g.id <= (trajet.idArrivee ?? 0))
@@ -132,7 +240,10 @@ class ListeTrajetsScreen extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Détails de trajet', style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+        title: Text(
+          'Détails de trajet',
+          style: TextStyle(color: Color(0xFF353C67), fontWeight: FontWeight.bold),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -142,7 +253,7 @@ class ListeTrajetsScreen extends StatelessWidget {
               SizedBox(height: 20),
               _buildInfoText("Jour de Circulation:", "Tous les jours sauf vendredis"),
               SizedBox(height: 10),
-              _buildInfoText("PRIX:", "200 DA"),
+              _buildInfoText("PRIX:", "70 DA"),
               SizedBox(height: 10),
               _buildFavoriserButton(context),
             ],
@@ -153,35 +264,71 @@ class ListeTrajetsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTrajetGraphique(List<GareIntermediaire> etapes, List<GareIntermediaire> intermediaires, BuildContext context) {
+  Widget _buildTrajetGraphique(
+      List<GareIntermediaire> etapes,
+      List<GareIntermediaire> intermediaires,
+      BuildContext context,
+      ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Row(
+          children: List.generate(etapes.length * 2 - 1, (i) {
+            if (i.isOdd) {
+              // Ligne entre les icônes
+              return Container(
+                width: 50,
+                height: 3,
+                color: Color(0xFF353C67),
+              );
+            } else {
+              int index = i ~/ 2;
+              final isFirst = index == 0;
+              final isLast = index == etapes.length - 1;
+              final gare = etapes[index];
+
+              IconData icon = isFirst || isLast
+                  ? Icons.directions_train_rounded
+                  : Icons.location_on_rounded;
+
+              Color color = isFirst
+                  ? Colors.green
+                  : isLast
+                  ? Colors.red
+                  : Color(0xFF353C67);
+
+              return _GareIconWithPopup(
+                icon: icon,
+                color: color,
+                gareName: gare.gare,
+                showName: isFirst || isLast,
+              );
+            }
+          }),
+        ),
+      ),
+    );
+  }
+
+
+
+
+
+
+  Widget _buildGareWidget(String gare, IconData icon, Color couleur) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
         children: [
-          _buildGareWidget(etapes.first.gare, Colors.green),
-          ...intermediaires.expand((gare) => [
-            Container(width: 20, height: 2, color: Colors.blue),
-            GestureDetector(
-              onTap: () => _showIntermediaireDetails(context, gare),
-              child: Icon(Icons.change_history, color: Colors.teal, size: 20),
-            ),
-          ]),
-          Container(width: 20, height: 2, color: Colors.blue),
-          _buildGareWidget(etapes.last.gare, Colors.red),
+          Icon(icon, color: couleur, size: 24),
+          SizedBox(height: 4),
+          Text(gare, style: TextStyle(fontSize: 12, color: Colors.black87)),
         ],
       ),
     );
   }
 
-  Widget _buildGareWidget(String gare, Color couleur) {
-    return Column(
-      children: [
-        Icon(Icons.circle, color: couleur, size: 24),
-        SizedBox(height: 4),
-        Text(gare, style: TextStyle(fontSize: 12, color: Colors.black87)),
-      ],
-    );
-  }
 
   void _showIntermediaireDetails(BuildContext context, GareIntermediaire gare) {
     showDialog(
@@ -204,9 +351,9 @@ class ListeTrajetsScreen extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: RichText(
         text: TextSpan(
-          style: TextStyle(color: Colors.black87, fontSize: 14),
+          style: TextStyle(color: Colors.black87, fontSize: 16),
           children: [
-            TextSpan(text: "$title ", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+            TextSpan(text: "$title ", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF353C67))),
             TextSpan(text: content),
           ],
         ),
@@ -214,18 +361,23 @@ class ListeTrajetsScreen extends StatelessWidget {
     );
   }
 
+
+
   Widget _buildFavoriserButton(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () {
-          // Action de favoris préférés
-        },
-        icon: Icon(Icons.star_border, color: Colors.grey),
-        label: Text("Favoriser ce trajet", style: TextStyle(color: Colors.black)),
+    return ElevatedButton.icon(
+      onPressed: () {
+        // Logique pour "favoriser"
+      },
+      icon: Icon(Icons.star_border), // icône étoile vide
+      label: Text("Favoriser"),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.orange[100],
+        foregroundColor: Colors.black,
       ),
     );
   }
+
+
 
   List<Widget> _buildDialogActions(BuildContext context) {
     return [
@@ -371,7 +523,8 @@ class ListeTrajetsScreen extends StatelessWidget {
                                 child: ElevatedButton.icon(
                                   icon: Icon(Icons.info_outline),
                                   label: Text("Voir détails"),
-                                  onPressed: () => _afficherDetails(context, trajet),
+                                  onPressed: () => _showOverlayDetails(context, trajet),
+
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue[100],
                                     shape: RoundedRectangleBorder(
@@ -390,6 +543,78 @@ class ListeTrajetsScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+class _GareIconWithPopup extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final String gareName;
+  final bool showName; // true = nom affiché tout le temps (sous forme de texte simple)
+
+  const _GareIconWithPopup({
+    required this.icon,
+    required this.color,
+    required this.gareName,
+    this.showName = false,
+  });
+
+  @override
+  State<_GareIconWithPopup> createState() => _GareIconWithPopupState();
+}
+
+class _GareIconWithPopupState extends State<_GareIconWithPopup> {
+  bool showPopup = false;
+
+  void togglePopup() {
+    setState(() => showPopup = true);
+    Future.delayed(Duration(seconds: 2), () {
+      if (mounted) setState(() => showPopup = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.showName ? null : togglePopup,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(widget.icon, color: widget.color, size: 24),
+
+          // NOM EN DESSOUS pour les gares de départ/arrivée
+          if (widget.showName)
+            Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: Text(
+                widget.gareName,
+                style: TextStyle(fontSize: 12, color: Colors.black87),
+              ),
+            ),
+
+          // Popup au clic pour gares intermédiaires
+          if (!widget.showName && showPopup)
+            Container(
+              margin: EdgeInsets.only(top: 4),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.pink[100],
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Text(
+                widget.gareName,
+                style: TextStyle(fontSize: 12, color: Colors.black87),
+              ),
+            ),
+        ],
       ),
     );
   }
