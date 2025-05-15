@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'firebase_options.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:dztrainfay/CreatePasswordScreen.dart';
 import 'package:dztrainfay/ForgotPasswordScreen.dart';
 import 'package:dztrainfay/PasswordChangedScreen.dart';
@@ -12,9 +12,11 @@ import 'package:dztrainfay/SignUpScreen.dart';
 import 'package:dztrainfay/VerifyEmailScreen.dart';
 import 'package:dztrainfay/onboarding_screen.dart';
 import 'package:dztrainfay/HomePage.dart';
-
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
+import 'package:dztrainfay/locale_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,16 +25,14 @@ void main() async {
   );
 
   final prefs = await SharedPreferences.getInstance();
-
   final bool onboardingSeen = prefs.getBool('onboarding_seen') ?? false;
   final bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
   final String username = prefs.getString('username') ?? 'Utilisateur';
-
   final bool isDarkMode = prefs.getBool('isDarkMode') ?? false;
 
   bool loggedIn = false;
   await prefs.setString('username', username);
-  await prefs.setBool('isLoggedIn', true); // optionnel pour plus tard
+  await prefs.setBool('isLoggedIn', true);
 
   if (username.isNotEmpty) {
     final doc = await FirebaseFirestore.instance
@@ -45,13 +45,17 @@ void main() async {
     }
   }
 
-
-  runApp(MyApp(
-    onboardingSeen: onboardingSeen,
-    isLoggedIn: loggedIn,
-    username: username,
-    isDarkMode: isDarkMode,
-  ));
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => LocaleProvider(),
+      child: MyApp(
+        onboardingSeen: onboardingSeen,
+        isLoggedIn: loggedIn,
+        username: username,
+        isDarkMode: isDarkMode,
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -67,25 +71,38 @@ class MyApp extends StatelessWidget {
     required this.isDarkMode,
   });
 
-
-
   @override
-
   Widget build(BuildContext context) {
-    // 🔒 On ne fait confiance qu'à SharedPreferences
     Widget startScreen;
+    final provider = Provider.of<LocaleProvider>(context);
 
     if (!onboardingSeen) {
-      startScreen = OnboardingScreen(); // première ouverture
+      startScreen = OnboardingScreen();
     } else if (isLoggedIn) {
-      startScreen = HomePage(username: username); // ✅ utilisateur connecté (contrôlé par toi)
+      startScreen = HomePage(username: username);
     } else {
-      startScreen = SignInScreen(); // 🔐 pas connecté
+      startScreen = SignInScreen();
     }
 
     return MaterialApp(
       title: 'DzTrain',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      locale: provider.locale,
+      supportedLocales: const [
+        Locale('fr'),
+        Locale('en'),
+        Locale('ar'),
+      ],
+      localeResolutionCallback: (locale, supportedLocales) {
+        if (locale == null) return supportedLocales.first;
+        for (var supportedLocale in supportedLocales) {
+          if (supportedLocale.languageCode == locale.languageCode) {
+            return supportedLocale;
+          }
+        }
+        return supportedLocales.first;
+      },
       theme: ThemeData.light().copyWith(
         primaryColor: Color(0xFF353C67),
         scaffoldBackgroundColor: Colors.grey[100],
@@ -107,7 +124,8 @@ class MyApp extends StatelessWidget {
         cardColor: Color(0xFF1E1E2E),
         textTheme: TextTheme(
           bodyMedium: TextStyle(color: Colors.white70),
-          titleLarge: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          titleLarge:
+          TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         iconTheme: IconThemeData(color: Colors.blueGrey),
         listTileTheme: ListTileThemeData(
@@ -116,12 +134,12 @@ class MyApp extends StatelessWidget {
         ),
         switchTheme: SwitchThemeData(
           thumbColor: MaterialStateProperty.all(Colors.purpleAccent),
-          trackColor: MaterialStateProperty.all(Colors.purple.withOpacity(0.5)),
+          trackColor:
+          MaterialStateProperty.all(Colors.purple.withOpacity(0.5)),
         ),
       ),
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: startScreen,
-
       routes: {
         '/login': (context) => SignInScreen(),
         '/signup': (context) => RegisterPage(),
@@ -132,7 +150,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ✅ Déconnexion complète et sécurisée
+// Déconnexion complète et sécurisée
 Future<void> logout(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
   final String username = prefs.getString('username') ?? '';
@@ -157,9 +175,7 @@ Future<void> logout(BuildContext context) async {
   Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
 }
 
-
-
-// ✅ Suppression de compte (optionnelle)
+// Suppression de compte (optionnelle)
 Future<void> deleteAccount(BuildContext context, String userId) async {
   try {
     await FirebaseFirestore.instance.collection('User').doc(userId).delete();
