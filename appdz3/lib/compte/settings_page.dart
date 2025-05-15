@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
 import 'delete_account_page.dart';
+import 'package:dztrainfay/locale_provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class SettingsPage extends StatefulWidget {
   final Map<String, dynamic> userData;
-  final Function(String) changeLanguage;
   final Function(bool) toggleTheme;
   final Function(bool) toggleNotifications;
   final String selectedLanguage;
+  final Function(String) changeLanguage;
   final bool isDarkMode;
 
   const SettingsPage({
     super.key,
     required this.userData,
-    required this.changeLanguage,
     required this.toggleTheme,
     required this.toggleNotifications,
     required this.selectedLanguage,
+    required this.changeLanguage,
     required this.isDarkMode,
   });
 
@@ -38,20 +41,16 @@ class _SettingsPageState extends State<SettingsPage> {
     isDarkMode = widget.isDarkMode;
   }
 
-  void changeLanguage(String language) {
-    widget.changeLanguage(language);
-    setState(() {});
-  }
-
   @override
   Widget build(BuildContext context) {
     final user = widget.userData;
     final theme = Theme.of(context);
+    final localizations = AppLocalizations.of(context)!;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text("⚙️ Paramètres", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(localizations.settings, style: const TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: primaryColor,
         foregroundColor: Colors.black87,
@@ -63,44 +62,32 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             _buildUserCard(user),
             const SizedBox(height: 24),
-            _buildSettingsSection("Compte", [
-              _buildTile(Icons.edit, "Modifier le profil", onTap: () {
+            _buildSettingsSection(localizations.account, [
+              _buildTile(Icons.edit, localizations.editProfile, onTap: () {
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => EditProfilePage(userData: widget.userData),
                 ));
               }),
-              _buildTile(Icons.lock, "Changer le mot de passe", onTap: () {
+              _buildTile(Icons.lock, localizations.changePassword, onTap: () {
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => ChangePasswordPage(userId: user['id']),
                 ));
               }),
-              _buildTile(Icons.delete_forever, "Supprimer mon compte", onTap: () {
+              _buildTile(Icons.delete_forever, localizations.deleteAccount, onTap: () {
                 Navigator.push(context, MaterialPageRoute(
                   builder: (_) => DeleteAccountPage(userId: user['id']),
                 ));
               }),
             ]),
             const SizedBox(height: 24),
-            _buildSettingsSection("Préférences", [
-              _buildTile(Icons.language, "Changer la langue", subtitle: widget.selectedLanguage, onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text("Choisir une langue"),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildLangTile("Français", 'fr'),
-                        _buildLangTile("English", 'en'),
-                        _buildLangTile("العربية", 'ar'),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+            _buildSettingsSection(localizations.preferences, [
+              _buildTile(Icons.language, localizations.changeLanguage,
+                  subtitle: widget.selectedLanguage.toUpperCase(), onTap: () {
+                    _showLanguageDialog(context);
+                  }),
               SwitchListTile(
                 secondary: Icon(Icons.dark_mode, color: Colors.black87),
-                title: const Text("Mode sombre", style: TextStyle(fontWeight: FontWeight.w500)),
+                title: Text(localizations.darkMode, style: const TextStyle(fontWeight: FontWeight.w500)),
                 value: isDarkMode,
                 activeColor: primaryColor,
                 onChanged: (value) async {
@@ -112,7 +99,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               SwitchListTile(
                 secondary: Icon(Icons.notifications_active, color: Colors.black87),
-                title: const Text("Notifications", style: TextStyle(fontWeight: FontWeight.w500)),
+                title: Text(localizations.notifications, style: const TextStyle(fontWeight: FontWeight.w500)),
                 value: areNotificationsEnabled,
                 activeColor: primaryColor,
                 onChanged: (value) {
@@ -124,6 +111,37 @@ class _SettingsPageState extends State<SettingsPage> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    final localizations = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(localizations.chooseLanguage),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLangTile("Français", const Locale('fr')),
+            _buildLangTile("English", const Locale('en')),
+            _buildLangTile("العربية", const Locale('ar')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLangTile(String label, Locale locale) {
+    return ListTile(
+      title: Text(label),
+      onTap: () async {
+        Provider.of<LocaleProvider>(context, listen: false).setLocale(locale.languageCode);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('language', locale.languageCode);
+        Navigator.of(context).pop();
+      },
     );
   }
 
@@ -156,16 +174,6 @@ class _SettingsPageState extends State<SettingsPage> {
       subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(color: Colors.grey)) : null,
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       onTap: onTap,
-    );
-  }
-
-  Widget _buildLangTile(String label, String code) {
-    return ListTile(
-      title: Text(label),
-      onTap: () {
-        changeLanguage(code);
-        Navigator.pop(context);
-      },
     );
   }
 
