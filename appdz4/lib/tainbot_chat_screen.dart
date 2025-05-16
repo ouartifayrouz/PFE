@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'AnimatedBackground.dart'; // ✅ Seulement le fond animé
+
 class TrainbotChatScreen extends StatefulWidget {
   @override
   _TrainbotChatScreenState createState() => _TrainbotChatScreenState();
@@ -12,6 +14,7 @@ class TrainbotChatScreen extends StatefulWidget {
 class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
   late df.DialogFlowtter dialogFlowtter;
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   bool isReady = false;
   String? username;
 
@@ -38,26 +41,27 @@ class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
       final userDoc = FirebaseFirestore.instance.collection('User').doc(user.uid);
       final docSnapshot = await userDoc.get();
       if (docSnapshot.exists && docSnapshot.data()!.containsKey('username')) {
-        await FirebaseFirestore.instance.collection('TrainbotPrivateChats').doc(user.uid).set({
-          'username': docSnapshot['username'],
-        }, SetOptions(merge: true));
+        await FirebaseFirestore.instance
+            .collection('TrainbotPrivateChats')
+            .doc(user.uid)
+            .set({'username': docSnapshot['username']}, SetOptions(merge: true));
       }
     }
   }
 
   Future<void> initDialogFlowtter() async {
-    debugPrint("\u{1F504} Initialisation de Dialogflow...");
+    debugPrint("🔄 Initialisation de Dialogflow...");
     try {
       final instance = await df.DialogFlowtter.fromFile(
         path: 'assets/dialogflow-auth.json',
       );
-      debugPrint("\u{2705} Dialogflow initialisé avec succès !");
+      debugPrint("✅ Dialogflow initialisé !");
       setState(() {
         dialogFlowtter = instance;
         isReady = true;
       });
     } catch (e) {
-      debugPrint("\u{274C} Erreur d'initialisation Dialogflow: $e");
+      debugPrint("❌ Erreur d'initialisation Dialogflow: $e");
     }
   }
 
@@ -74,10 +78,9 @@ class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
         .add({
       'text': userMessage,
       'sender': username,
-      'owner': username, // 🆕 pour filtrer plus tard
+      'owner': username,
       'timestamp': FieldValue.serverTimestamp(),
     });
-
 
     try {
       final response = await dialogFlowtter.detectIntent(
@@ -98,107 +101,110 @@ class _TrainbotChatScreenState extends State<TrainbotChatScreen> {
           .add({
         'text': botResponse,
         'sender': 'bot',
-        'owner': username, // 🆕 propriété du message
+        'owner': username,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
+      _scrollController.animateTo(
+        0.0,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     } catch (e) {
-      debugPrint("\u{274C} Erreur avec Dialogflow : $e");
+      debugPrint("❌ Erreur avec Dialogflow : $e");
     }
   }
 
   Widget _buildMessages() {
-    return Container(
-      color: Colors.white,
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('TrainbotPrivateChats')
-            .doc(chatId)
-            .collection('messages')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('TrainbotPrivateChats')
+          .doc(chatId)
+          .collection('messages')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
 
-          var messages = snapshot.data!.docs;
-          if (messages.isEmpty) {
-            return Center(
-              child: Text("Aucun message pour l'instant",
-                  style: TextStyle(fontSize: 16, color: Colors.grey)),
-            );
-          }
-
-          return ListView.builder(
-            reverse: true,
-            itemCount: messages.length,
-            itemBuilder: (context, index) {
-              var messageData = messages[index];
-
-              // ❗️On vérifie que le message appartient à l'utilisateur connecté
-              if (messageData['owner'] != username) {
-                return SizedBox.shrink();
-              }
-
-              return ChatMessage(
-                text: messageData['text'],
-                isUser: messageData['sender'] == username,
-              );
-            },
+        var messages = snapshot.data!.docs;
+        if (messages.isEmpty) {
+          return Center(
+            child: Text("Aucun message pour l'instant",
+                style: TextStyle(fontSize: 16, color: Colors.grey)),
           );
+        }
 
+        return ListView.builder(
+          controller: _scrollController,
+          reverse: true,
+          itemCount: messages.length,
+          itemBuilder: (context, index) {
+            var messageData = messages[index].data() as Map<String, dynamic>;
+            final msgText = messageData['text'] ?? '';
+            final sender = messageData['sender'] ?? '';
+            final owner = messageData['owner'] ?? '';
 
-        },
-      ),
+            if (owner != username) return SizedBox.shrink();
+
+            return ChatMessage(
+              text: msgText,
+              isUser: sender == username,
+            );
+          },
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isLight = Theme.of(context).brightness == Brightness.light;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text("TrainBot - ${isReady ? 'Prêt \u{2705}' : 'Chargement...'}"),
-        backgroundColor: Colors.indigo,
+        title: Text("TrainBot"),
+        backgroundColor: Color(0x998BB1FF),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Flexible(child: _buildMessages()),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    style: TextStyle(
-                      color: isLight ? Colors.black : Colors.white,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: "Écrire un message...",
-                      hintStyle: TextStyle(
-                        color: isLight ? Colors.grey[600] : Colors.grey[300],
+          // ✅ Fond animé uniquement
+          Positioned.fill(child: AnimatedBackground()),
+
+          // 💬 Contenu du chat
+          Column(
+            children: [
+              Expanded(child: _buildMessages()),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _controller,
+                        style: TextStyle(color: Colors.black),
+                        decoration: InputDecoration(
+                          hintText: "Écrire un message...",
+                          hintStyle: TextStyle(color: Colors.black54),
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.85),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        ),
                       ),
-                      filled: true,
-                      fillColor: isLight ? Colors.white : Colors.grey[800],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
-                  ),
+                    SizedBox(width: 8),
+                    CircleAvatar(
+                      backgroundColor: Color(0x998BB1FF),
+                      child: IconButton(
+                        icon: Icon(Icons.send, color: Colors.white),
+                        onPressed: _sendMessage,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: Colors.indigo,
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.white),
-                    onPressed: _sendMessage,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -214,28 +220,40 @@ class ChatMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-        padding: EdgeInsets.all(14),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        decoration: BoxDecoration(
-          color: isUser ? Colors.indigo : Colors.grey[300],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-            bottomLeft: isUser ? Radius.circular(20) : Radius.zero,
-            bottomRight: isUser ? Radius.zero : Radius.circular(20),
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          Flexible(
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUser ? Colors.indigo : Colors.grey[200],
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: isUser ? Radius.circular(18) : Radius.zero,
+                  bottomRight: isUser ? Radius.zero : Radius.circular(18),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Text(
+                text,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isUser ? Colors.white : Colors.black87,
+                ),
+              ),
+            ),
           ),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.black,
-            fontSize: 16,
-          ),
-        ),
+        ],
       ),
     );
   }

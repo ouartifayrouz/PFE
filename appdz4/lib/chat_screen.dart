@@ -53,13 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
-            Text(
-              "Accédez aux salons de discussion",
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white70 : Colors.black87,
-              ),
-            ),
+          
           ],
         ),
         actions: [
