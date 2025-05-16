@@ -8,6 +8,7 @@ import 'support_page.dart';
 import 'HoraireTrainPage.dart';
 import 'logout_helper.dart';
 import 'historique_trajets_page.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class ProfilePage extends StatefulWidget {
   final String username;
@@ -110,6 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -130,7 +132,7 @@ class _ProfilePageState extends State<ProfilePage> {
           elevation: 0,
           centerTitle: true,
           title: Text(
-            'Mon Compte',
+            loc.profile_page_title,
             style: TextStyle(
               color: isDark ? Colors.white : primaryColor,
               fontWeight: FontWeight.bold,
@@ -140,14 +142,12 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: Column(
         children: [
-          _buildHeader(isDark),
+          _buildHeader(loc, isDark),
           Expanded(
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: isDark
-                      ? [Colors.black87, Colors.black54]
-                      : [Colors.white, Colors.white],
+                  colors: isDark ? [Colors.black87, Colors.black54] : [Colors.white, Colors.white],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -159,7 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildListTile(Icons.person, 'Informations personnelles', () {
+                  _buildListTile(Icons.person, loc.personal_info_tile, () {
                     if (userData != null) {
                       Navigator.push(
                         context,
@@ -170,7 +170,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     }
                   }, isDark),
                   SwitchListTile(
-                    title: Text('Mode sombre', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                    title: Text(loc.dark_mode_tile, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                     value: _isDark,
                     onChanged: (value) {
                       setState(() {
@@ -180,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                     secondary: Icon(Icons.dark_mode, color: isDark ? Colors.white : primaryColor),
                   ),
-                  _buildListTile(Icons.settings, 'Paramètres', () {
+                  _buildListTile(Icons.settings, loc.settings_tile, () {
                     if (userData != null && userData!['username'] != null) {
                       Navigator.push(
                         context,
@@ -197,49 +197,49 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     }
                   }, isDark),
-                  _buildListTile(Icons.notifications, 'Notifications', () {
+                  _buildListTile(Icons.notifications, loc.notifications_tile, () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Notifications à venir.")),
+                      SnackBar(content: Text(loc.profile_notifications + " à venir.")),
                     );
                   }, isDark),
-                  _buildListTile(Icons.history, 'Trajets favoris', () {
+                  _buildListTile(Icons.history, loc.history_tile, () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const HistoriqueTrajetsPage()),
                     );
                   }, isDark),
-                  _buildListTile(Icons.train, 'Horaires des trains', () {
+                  _buildListTile(Icons.train, loc.train_schedule_tile, () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => HoraireTrainPage()),
                     );
                   }, isDark),
-                  _buildListTile(Icons.help_outline, 'Aide et support', () {
+                  _buildListTile(Icons.help_outline, loc.support_tile, () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const SupportPage()),
                     );
                   }, isDark),
                   const Divider(),
-                  _buildListTile(Icons.logout, 'Déconnexion', () async {
+                  _buildListTile(Icons.logout, loc.logout_tile, () async {
                     final confirmed = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
                         title: Text(
-                          "Déconnexion",
+                          loc.logout_dialog_title,
                           style: TextStyle(
                             color: isDark ? Colors.white : Colors.black,
                           ),
                         ),
-                        content: Text("Voulez-vous vraiment vous déconnecter ?"),
+                        content: Text(loc.logout_dialog_message),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: Text("Annuler"),
+                            child: Text(loc.logout_cancel),
                           ),
                           TextButton(
                             onPressed: () => Navigator.pop(context, true),
-                            child: Text("Déconnexion"),
+                            child: Text(loc.logout_confirm),
                           ),
                         ],
                       ),
@@ -257,7 +257,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(AppLocalizations loc, bool isDark) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -276,7 +276,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
           const SizedBox(height: 10),
           Text(
-            userData?['username'] ?? "Nom inconnu",
+            userData?['username'] ?? loc.profile_username,
             style: TextStyle(
               color: isDark ? Colors.white : primaryColor,
               fontSize: 20,
@@ -284,7 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
           ),
           Text(
-            userData?['email'] ?? "Email inconnu",
+            userData?['email'] ?? loc.profile_email,
             style: TextStyle(
               color: isDark ? Colors.white70 : Colors.black,
               fontSize: 14,
@@ -300,11 +300,7 @@ class _ProfilePageState extends State<ProfilePage> {
       leading: Icon(icon, color: isDark ? Colors.white : primaryColor),
       title: Text(
         title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: isDark ? Colors.white : Colors.black,
-        ),
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: isDark ? Colors.white : Colors.black),
       ),
       trailing: Icon(Icons.arrow_forward_ios, color: isDark ? Colors.white54 : Colors.grey),
       onTap: onTap,
