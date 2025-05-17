@@ -85,9 +85,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
 
         // Overlay sombre pour une meilleure lisibilité du texte
-        Container(
-          color: Colors.black.withOpacity(0.4), // Opacité de 40%
-        ),
+      //  Container(
+      //    color: Colors.black.withOpacity(0.4), // Opacité de 40%
+      //  ),
 
         // Texte centré sur l'image
         Padding(
