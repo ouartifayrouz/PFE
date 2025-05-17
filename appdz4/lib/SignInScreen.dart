@@ -258,32 +258,36 @@ class _SignInScreenState extends State<SignInScreen> {
                         }
 
                         // 🔹 Sinon, on vérifie dans la collection des utilisateurs normaux
-                        // Supposons que tu as déjà validé que l'utilisateur existe avec ce snapshot :
                         QuerySnapshot userSnapshot = await FirebaseFirestore.instance
                             .collection('User')
-                            .where('username', isEqualTo: username) // ou par email si tu préfères
+                            .where('username', isEqualTo: username)
                             .where('password', isEqualTo: password)
                             .get();
 
+
                         if (userSnapshot.docs.isNotEmpty) {
-                          final userDoc = userSnapshot.docs.first;
+
+                          // ✅ Mise à jour CompteUser.loggedIn à true
+                          await FirebaseFirestore.instance
+                              .collection('CompteUser')
+                              .doc(username)
+                              .set({'loggedIn': true}, SetOptions(merge: true));
+
+
                           final prefs = await SharedPreferences.getInstance();
-                          await prefs.setString('username', userDoc['username']); // ✅ on sauvegarde le nom
-
-                          // Ensuite, on peut naviguer vers la page d’accueil
-                          final username = userDoc['username']; // ✅ récupère ici
-
+                          await prefs.setBool('isLoggedIn', true);
                           await prefs.setString('username', username);
+
+                          final sharedPrefs = await SharedPreferences.getInstance();
+                          await sharedPrefs.setBool('isLoggedIn', true);
+                          await sharedPrefs.setString('username', username);
+
 
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => HomePage(username: username), // ✅ passe le paramètre ici
-                            ),
+                            MaterialPageRoute(builder: (context) => HomePage(username: username)),
                           );
-
                         }
-
                         else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Nom d'utilisateur ou mot de passe incorrect")),
